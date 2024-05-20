@@ -15,8 +15,8 @@ void mdc(mpz_t result, const mpz_t a, const mpz_t b) {
 
 // checando se g e raiz primitiva modulo p
 bool is_primitive_root(const mpz_t g, const mpz_t p) {
-    mpz_t order, exp, gcd_result, temp;
-    mpz_inits(order, exp, gcd_result, temp, NULL);
+    mpz_t order, exp, mdc_result, temp;
+    mpz_inits(order, exp, mdc_result, temp, NULL);
     
     // p - 1
     mpz_sub_ui(order, p, 1);
