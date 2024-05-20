@@ -21,7 +21,6 @@ bool is_primitive_root(const mpz_t g, const mpz_t p) {
     // p - 1
     mpz_sub_ui(order, p, 1);
     
-    // Check for each factor of p-1
     mpz_tdiv_q_ui(exp, order, 2);
     mdc(mdc_result, g, p);
     
