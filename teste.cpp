@@ -94,6 +94,49 @@ bool isPrimeMRtest(mpz_t n, int& MR_count) {
   return false; // n é composto
 }
 
+// checando se g e raiz primitiva modulo p
+bool is_primitive_root(const mpz_t g, const mpz_t p) {
+  mpz_t order, exp, mdc_result, temp;
+  mpz_inits(order, exp, mdc_result, temp, NULL);
+
+  // p - 1
+  mpz_sub_ui(order, p, 1);
+
+  mpz_tdiv_q_ui(exp, order, 2);
+  mpz_gcd(mdc_result, g, p);
+
+  if (mpz_cmp_ui(mdc_result, 1) != 0) {
+    mpz_clears(order, exp, mdc_result, temp, NULL);
+    return false;
+  }
+
+  mpz_powm(temp, g, exp, p);
+  if (mpz_cmp_ui(temp, 1) == 0) {
+    mpz_clears(order, exp, mdc_result, temp, NULL);
+    return false;
+  }
+
+  mpz_clears(order, exp, mdc_result, temp, NULL);
+  return true;
+}
+
+// Funcao raiz primitiva modulo p
+void find_primitive_root(mpz_t result, const mpz_t p) {
+  mpz_t g;
+  mpz_init_set_ui(g, 2); // Primeiro candidato para g
+
+  while (true) {
+    if (is_primitive_root(g, p)) {
+      mpz_set(result, g);
+      break;
+    }
+    mpz_add_ui(g, g, 1);
+  }
+
+  mpz_clear(g);
+}
+
+
 
 
 int main() {
@@ -152,6 +195,17 @@ int main() {
 
   gmp_printf("Next prime: %Zd\n", prime);
   printf("Number of times the Miller-Rabin test was used: %d\n", MR_count);
+
+  // Raiz primitiva 
+  find_primitive_root(generator, prime);
+
+  mpz_out_str(stdout, 10, prime);
+  std::cout << std::endl;
+
+  std::cout << "Raiz primitiva modulo " << input_N << " e: ";
+  mpz_out_str(stdout, 10, generator);
+  std::cout << std::endl;
+
 
   mpz_clears(N, a, candidate, prime, NULL);
 
