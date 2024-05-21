@@ -199,10 +199,7 @@ int main() {
   // Raiz primitiva 
   find_primitive_root(generator, prime);
 
-  mpz_out_str(stdout, 10, prime);
-  std::cout << std::endl;
-
-  std::cout << "Raiz primitiva modulo " << input_N << " e: ";
+  std::cout << "Modular primitive root" << input_N << " is: ";
   mpz_out_str(stdout, 10, generator);
   std::cout << std::endl;
 
