@@ -1,0 +1,42 @@
+# Ignore all files and directories in the gmp-6.3.0 folder
+gmp-6.3.0/
+
+# Ignore build directories and files
+/build/
+/bin/
+/obj/
+/out/
+
+# Ignore dependency directories
+/node_modules/
+/vendor/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore log files and databases
+*.log
+*.sql
+*.sqlite
+
+# Ignore temporary files
+*.tmp
+*.swp
+*.bak
+*.old
+*.pid
+*.seed
+*.lock
+
+# Ignore compiled files
+*.o
+*.so
+*.a
+*.dll
+*.exe
+*.class
+*.jar
+*.pyc
+*.pyo
+*.out
