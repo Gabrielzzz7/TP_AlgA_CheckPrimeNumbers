@@ -86,12 +86,8 @@ std::vector<mpz_class> factorize(mpz_class n) {
     std::vector<mpz_class> factorization;
 
     for (mpz_class d = 2; d * d <= n; d++) {
-      //Se o número de fatores primos passar de 1000, então não é computavel (no nosso PC!!)
-      if(factorization.size() > 1000){
-        break;
-      }
-      factorization.push_back(d);
-        while (n % d == 0) {            
+        while (n % d == 0) {
+            factorization.push_back(d);
             n /= d;
         }
     }
@@ -106,11 +102,12 @@ void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
     mpz_class n, result, exp;
 
     n = primo - 1;
+
     // Fatorando primo-1
     factors = factorize(n);
-    for (gerador = 2; gerador <= primo; ++gerador) {
+    for (gerador = 1; gerador < primo; ++gerador) {
         bool is_primitive = true;
-        for (size_t i = 0; i < factors.size() && is_primitive; ++i) {
+        for (size_t i = 0; i < factors.size(); ++i) {
             mpz_class q = factors[i];
             exp = n / q;
             mpz_powm(result.get_mpz_t(), gerador.get_mpz_t(), exp.get_mpz_t(), primo.get_mpz_t());
@@ -125,6 +122,35 @@ void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
         }
     }
 }
+
+
+// ========== BSGS =============
+
+mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a){
+
+    mpz_class r; // Teto da raiz do número primo p
+    mpz_class c; // Resto da divisão de g ^ r por p
+    mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
+
+    std::vector<mpz_class> fatores;
+
+    mpz_sqrt(r.get_mpz_t(), p.get_mpz_t()); // Calculando raiz de p
+    r = r + 1; // Definindo o teto
+    mpz_powm(c.get_mpz_t(), g.get_mpz_t(), r.get_mpz_t(), p.get_mpz_t());
+
+    for(mpz_class i = 0; i < r; i++){
+
+        // a * g ^ i mod p
+        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), (unsigned long) i.get_mpz_t());
+        fat2 *= a;
+        mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t());
+        
+        fatores.push_back(fat2);
+    }
+
+    //FAZER TABELA HASH
+}
+
 
 // ========== Main =============
 
