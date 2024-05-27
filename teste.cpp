@@ -1,7 +1,6 @@
 #include <iostream>
 #include <gmpxx.h>
 #include <vector>
-
 // ============= Implementação Miller-Rabin e achando menor primo maior que N ==============
 
 // Teste Miller-Rabin
@@ -82,26 +81,30 @@ bool isPrimeMRtest(mpz_class n, int& MR_count) {
 
 // =========== Implementação - achando raíz primitiva de N ============
 
-// fatorando o numero p-1
-void factorize(mpz_class primo, std::vector<mpz_class>& factors) {
-    mpz_class factor;
+std::vector<mpz_class> factorize(mpz_class n) {
+    
+    std::vector<mpz_class> factorization;
 
-    for (factor = 2; factor <= primo; ++factor) {
-        while (primo % factor == 0) {
-            primo /= factor;
-            factors.push_back(factor);
+    for (mpz_class d = 2; d * d <= n; d++) {
+        while (n % d == 0) {
+            factorization.push_back(d);
+            n /= d;
         }
     }
+    if (n > 1)
+        factorization.push_back(n);
+    return factorization;
 }
 
 void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
+
     std::vector<mpz_class> factors;
     mpz_class n, result, exp;
 
     n = primo - 1;
 
     // Fatorando primo-1
-    factorize(n, factors);
+    factors = factorize(n);
     for (gerador = 1; gerador < primo; ++gerador) {
         bool is_primitive = true;
         for (size_t i = 0; i < factors.size(); ++i) {
