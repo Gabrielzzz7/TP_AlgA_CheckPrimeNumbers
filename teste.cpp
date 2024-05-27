@@ -100,31 +100,39 @@ std::vector<mpz_class> factorize(mpz_class n) {
     return factorization;
 }
 
-void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
+mpz_class find_primitive_root(mpz_class primo) {
 
     std::vector<mpz_class> factors;
-    mpz_class n, result, exp;
+    mpz_class n, result, exp, q;
 
     n = primo - 1;
 
     // Fatorando primo-1
     factors = factorize(n);
-    for (gerador = 1; gerador < primo; ++gerador) {
+
+    for (mpz_class gerador = 1; gerador < primo; gerador++) {
+
         bool is_primitive = true;
-        for (size_t i = 0; i < factors.size(); ++i) {
-            mpz_class q = factors[i];
+
+        for (size_t i = 0; i < factors.size(); i++) {
+
+            q = factors[i];
             exp = n / q;
             mpz_powm(result.get_mpz_t(), gerador.get_mpz_t(), exp.get_mpz_t(), primo.get_mpz_t());
+
             if (result == 1) {
                 is_primitive = false;
                 break;
             }
         }
+
         if (is_primitive) {
             // Se chegou aqui, gerador é primitivo
-            break;
+            return gerador;
         }
     }
+
+    return -1;
 }
 
 
@@ -209,7 +217,7 @@ int main() {
     printf("Numero de testes de Miller-Rabin: %d\n", MR_count);
 
     // Raiz primitiva
-    find_primitive_root(generator, prime);
+    generator = find_primitive_root(prime);
 
     std::cout << "Gerador g de " << prime << " e: ";
     mpz_out_str(stdout, 10, generator.get_mpz_t());
