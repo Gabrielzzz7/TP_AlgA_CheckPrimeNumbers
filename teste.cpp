@@ -86,8 +86,8 @@ std::vector<mpz_class> factorize(mpz_class n) {
     std::vector<mpz_class> factorization;
 
     for (mpz_class d = 2; d * d <= n; d++) {
-        while (n % d == 0) {
-            factorization.push_back(d);
+      factorization.push_back(d);
+        while (n % d == 0) {            
             n /= d;
         }
     }
@@ -105,9 +105,9 @@ void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
 
     // Fatorando primo-1
     factors = factorize(n);
-    for (gerador = 1; gerador < primo; ++gerador) {
+    for (gerador = 2; gerador <= primo; ++gerador) {
         bool is_primitive = true;
-        for (size_t i = 0; i < factors.size(); ++i) {
+        for (size_t i = 0; i < factors.size() && is_primitive; ++i) {
             mpz_class q = factors[i];
             exp = n / q;
             mpz_powm(result.get_mpz_t(), gerador.get_mpz_t(), exp.get_mpz_t(), primo.get_mpz_t());
@@ -122,8 +122,6 @@ void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
         }
     }
 }
-
-
 
 // ========== Main =============
 
