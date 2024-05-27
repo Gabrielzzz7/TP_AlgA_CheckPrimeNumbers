@@ -1,9 +1,12 @@
 #include <iostream>
+#include <algorithm>
 #include <gmpxx.h>
 #include <vector>
+
 // ============= Implementação Miller-Rabin e achando menor primo maior que N ==============
 
 // Teste Miller-Rabin
+
 bool millerRabinTest(mpz_class n, mpz_class a) {
     mpz_class x, n_minus_1, d, r;
 
@@ -51,6 +54,7 @@ bool millerRabinTest(mpz_class n, mpz_class a) {
 }
 
 // Teste de primalidade de Miller-Rabin
+
 bool isPrimeMRtest(mpz_class n, int& MR_count) {
     mpz_class primes[40];
 
@@ -131,24 +135,38 @@ mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a){
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
     mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
+    mpz_class u, l; // Expoentes dos fatores
+    mpz_class ans; 
 
     std::vector<mpz_class> fatores;
+    std::vector<mpz_class>::iterator it;
 
     mpz_sqrt(r.get_mpz_t(), p.get_mpz_t()); // Calculando raiz de p
     r = r + 1; // Definindo o teto
     mpz_powm(c.get_mpz_t(), g.get_mpz_t(), r.get_mpz_t(), p.get_mpz_t());
 
-    for(mpz_class i = 0; i < r; i++){
+    for(u = 0; u < r; u++){
 
-        // a * g ^ i mod p
-        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), (unsigned long) i.get_mpz_t());
+        // a * g ^ u mod p
+        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), (unsigned long) u.get_mpz_t());
         fat2 *= a;
         mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t());
         
         fatores.push_back(fat2);
+
+        // c ^ l mod p
+        mpz_powm(fat1.get_mpz_t(), c.get_mpz_t(), u.get_mpz_t(), p.get_mpz_t());
+        it = std::find(fatores.begin(), fatores.end(), fat2);
+
+        if(it != fatores.end()){
+
+            l = (mpz_class) (it - fatores.begin());
+            ans = l * r - u;
+            return ans;
+        }
     }
 
-    //FAZER TABELA HASH
+    return -1;
 }
 
 
@@ -159,12 +177,17 @@ int main() {
     int MR_count = 0;
 
     // Leitura
-    std::string input_N;
+    std::string input_N, input_a;
+
     std::cout << "Digite um numero grande N: ";
     std::getline(std::cin, input_N);
+
+    std::cout << "Insira o valor para a: ";
+    std::getline(std::cin, input_a);
     
-    // Convert input to mpz_class
+    // Convert inputs to mpz_class
     N = input_N;
+    a = input_a;
 
     // Comecando com um numero maior que N
     candidate = N + 1;
