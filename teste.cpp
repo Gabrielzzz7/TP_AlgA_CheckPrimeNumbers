@@ -86,6 +86,10 @@ std::vector<mpz_class> factorize(mpz_class n) {
     std::vector<mpz_class> factorization;
 
     for (mpz_class d = 2; d * d <= n; d++) {
+      //Se o número de fatores primos passar de 1000, então não é computavel (no nosso PC!!)
+      if(factorization.size() > 1000){
+        break;
+      }
       factorization.push_back(d);
         while (n % d == 0) {            
             n /= d;
@@ -102,7 +106,6 @@ void find_primitive_root(mpz_class& gerador, mpz_class& primo) {
     mpz_class n, result, exp;
 
     n = primo - 1;
-
     // Fatorando primo-1
     factors = factorize(n);
     for (gerador = 2; gerador <= primo; ++gerador) {
