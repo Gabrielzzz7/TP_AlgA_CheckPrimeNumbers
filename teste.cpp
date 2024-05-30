@@ -5,9 +5,24 @@
 
 // ============= Implementação Miller-Rabin e achando menor primo maior que N ==============
 
-// Teste Miller-Rabin
+// a^exp mod p
+void exp_mod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const mpz_class& primo) {
+    mpz_class base = a % primo;
+    mpz_class exp_copy = exp;
+    result = 1;
 
-bool millerRabinTest(mpz_class n, mpz_class a) {
+    while (exp_copy > 0) {
+        if (exp_copy % 2 == 1) { // if exp_copy is odd
+            result = (result * base) % primo;
+        }
+
+        base = (base * base) % primo;
+        exp_copy /= 2;
+    }
+}
+
+// Teste Miller-Rabin
+bool millerRabinTest(const mpz_class& n, const mpz_class& a) {
     mpz_class x, n_minus_1, d, r;
 
     n_minus_1 = n - 1;
@@ -23,7 +38,7 @@ bool millerRabinTest(mpz_class n, mpz_class a) {
     }
 
     // Calcula x = a^d % n
-    mpz_powm(x.get_mpz_t(), a.get_mpz_t(), d.get_mpz_t(), n.get_mpz_t());
+    exp_mod(x, a, d, n);
 
     // Se x == 1 ou x == n - 1, n é provavelmente primo
     if (x == 1 || x == n_minus_1) {
@@ -31,11 +46,9 @@ bool millerRabinTest(mpz_class n, mpz_class a) {
     }
 
     // Realiza r - 1 iterações
-    mpz_class i;
-    i = 0;
-    while (i < r) {
+    for (mpz_class i = 0; i < r - 1; i++) {
         // Calcula x = x^2 % n
-        mpz_powm_ui(x.get_mpz_t(), x.get_mpz_t(), 2, n.get_mpz_t());
+        exp_mod(x, x, 2, n);
 
         // Se x == n - 1, n é provavelmente primo
         if (x == n_minus_1) {
@@ -46,16 +59,13 @@ bool millerRabinTest(mpz_class n, mpz_class a) {
         if (x == 1) {
             return false;
         }
-
-        i += 1;
     }
 
     return false; // n é composto
 }
 
 // Teste de primalidade de Miller-Rabin
-
-bool isPrimeMRtest(mpz_class n, int& MR_count) {
+bool isPrimeMRtest(const mpz_class& n, int& MR_count) {
     mpz_class primes[40];
 
     // Inicializa os números primos
@@ -83,23 +93,8 @@ bool isPrimeMRtest(mpz_class n, int& MR_count) {
     return isPrime;
 }
 
-// =========== Implementação a^k mod n =============
-
-void exp_mod(mpz_class result, mpz_class gerador, mpz_class exp, mpz_class primo){
-    mpz_class base = a%primo;
-    while(exp > 0) {
-        if(k%2 == 1){
-            result = (ressult * base) % n;
-        }
-        base = (base*base) % n;
-        k/=2;
-    }
-}
-
 // =========== Implementação - achando raíz primitiva de N ============
-
 std::vector<mpz_class> factorize(mpz_class n) {
-    
     std::vector<mpz_class> factorization;
 
     for (mpz_class d = 2; d * d <= n; d++) {
@@ -113,8 +108,7 @@ std::vector<mpz_class> factorize(mpz_class n) {
     return factorization;
 }
 
-mpz_class find_primitive_root(mpz_class primo) {
-
+mpz_class find_primitive_root(const mpz_class& primo) {
     std::vector<mpz_class> factors;
     mpz_class n, result, exp, q;
 
@@ -124,14 +118,12 @@ mpz_class find_primitive_root(mpz_class primo) {
     factors = factorize(n);
 
     for (mpz_class gerador = 1; gerador < primo; gerador++) {
-
         bool is_primitive = true;
 
         for (size_t i = 0; i < factors.size(); i++) {
-
             q = factors[i];
             exp = n / q;
-            mpz_powm(result.get_mpz_t(), gerador.get_mpz_t(), exp.get_mpz_t(), primo.get_mpz_t());
+            exp_mod(result, gerador, exp, primo);
 
             if (result == 1) {
                 is_primitive = false;
@@ -148,40 +140,35 @@ mpz_class find_primitive_root(mpz_class primo) {
     return -1;
 }
 
-
 // ========== BSGS =============
-
-mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a){
-
+mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
     mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
     mpz_class u, l; // Expoentes dos fatores
-    mpz_class ans; 
+    mpz_class ans;
 
     std::vector<mpz_class> fatores;
     std::vector<mpz_class>::iterator it;
 
     mpz_sqrt(r.get_mpz_t(), p.get_mpz_t()); // Calculando raiz de p
     r = r + 1; // Definindo o teto
-    mpz_powm(c.get_mpz_t(), g.get_mpz_t(), r.get_mpz_t(), p.get_mpz_t());
+    exp_mod(c, g, r, p);
 
-    for(u = 0; u < r; u++){
-
+    for (u = 0; u < r; u++) {
         // a * g ^ u mod p
-        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), (unsigned long) u.get_mpz_t());
+        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), u.get_ui());
         fat2 *= a;
         mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t());
-        
+
         fatores.push_back(fat2);
 
         // c ^ l mod p
-        mpz_powm(fat1.get_mpz_t(), c.get_mpz_t(), u.get_mpz_t(), p.get_mpz_t());
+        exp_mod(fat1, c, u, p);
         it = std::find(fatores.begin(), fatores.end(), fat2);
 
-        if(it != fatores.end()){
-
-            l = (mpz_class) (it - fatores.begin());
+        if (it != fatores.end()) {
+            l = it - fatores.begin();
             ans = l * r - u;
             return ans;
         }
@@ -190,9 +177,7 @@ mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a){
     return -1;
 }
 
-
 // ========== Main =============
-
 int main() {
     mpz_class N, a, candidate, prime, generator;
     int MR_count = 0;
@@ -205,15 +190,15 @@ int main() {
 
     std::cout << "Insira o valor para a: ";
     std::getline(std::cin, input_a);
-    
+
     // Convert inputs to mpz_class
     N = input_N;
     a = input_a;
 
-    // Comecando com um numero maior que N
+    // Começando com um número maior que N
     candidate = N + 1;
 
-    // Não contar numeros pares
+    // Não contar números pares
     if (candidate % 2 == 0) {
         candidate += 1;
     }
@@ -232,7 +217,7 @@ int main() {
     // Raiz primitiva
     generator = find_primitive_root(prime);
 
-    std::cout << "Gerador g de " << prime << " e: ";
+    std::cout << "Gerador g de " << prime << " é: ";
     mpz_out_str(stdout, 10, generator.get_mpz_t());
     std::cout << std::endl;
 
