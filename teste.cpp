@@ -83,6 +83,19 @@ bool isPrimeMRtest(mpz_class n, int& MR_count) {
     return isPrime;
 }
 
+// =========== Implementação a^k mod n =============
+
+void exp_mod(mpz_class result, mpz_class gerador, mpz_class exp, mpz_class primo){
+    mpz_class base = a%primo;
+    while(exp > 0) {
+        if(k%2 == 1){
+            result = (ressult * base) % n;
+        }
+        base = (base*base) % n;
+        k/=2;
+    }
+}
+
 // =========== Implementação - achando raíz primitiva de N ============
 
 std::vector<mpz_class> factorize(mpz_class n) {
