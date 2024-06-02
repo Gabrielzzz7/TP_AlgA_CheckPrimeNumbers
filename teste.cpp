@@ -164,7 +164,7 @@ std::pair<mpz_class, mpz_class> findEstimativeGenerator(mpz_class prime, std::ve
     return { b, ord };
 }
 
-mpz_class find_primitive_root(mpz_class primo, std::vector<std::vector<mpz_class>> factors) {
+mpz_class findPrimitiveRoot(mpz_class primo, std::vector<std::vector<mpz_class>> factors) {
     mpz_class n, result, exp, q;
 
     n = primo - 1;
@@ -195,7 +195,7 @@ mpz_class find_primitive_root(mpz_class primo, std::vector<std::vector<mpz_class
 
 // ========== FORÇA BRUTA =============
 
-mpz_class brute_force(mpz_class p, mpz_class g, mpz_class a) {
+mpz_class bruteForce(mpz_class p, mpz_class g, mpz_class a) {
     mpz_class i;
     mpz_class pot, modulo;
 
@@ -317,7 +317,7 @@ int main() {
 
     }
     else {
-        generator = find_primitive_root(prime, factors);
+        generator = findPrimitiveRoot(prime, factors);
     }
 
     std::cout << "Gerador g de " << prime << " é: ";
