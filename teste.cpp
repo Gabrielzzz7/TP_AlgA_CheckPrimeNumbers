@@ -24,6 +24,8 @@ void exp_mod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const 
         base = (base * base) % primo;
         exp_copy /= 2;
     }
+
+    
 }
 
 // Teste Miller-Rabin
@@ -207,7 +209,7 @@ mpz_class brute_force(mpz_class p, mpz_class g, mpz_class a){
 
 // ========== BSGS =============
 
-mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
+mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a) {
     
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
@@ -220,23 +222,28 @@ mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
 
     mpz_sqrt(r.get_mpz_t(), p.get_mpz_t()); // Calculando raiz de p
     r = r + 1; // Definindo o teto
+    //std::cout << "\nO teto da raiz de P é " << r << "\n";
     exp_mod(c, g, r, p);
+    //std::cout << "\ng ^ r mod p é igual a " << c << "\n";
 
     for (u = 0; u < r; u++) {
-        // a * g ^ u mod p
+        // a * g ^ l mod p
         mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), u.get_ui()); // g ^ u
         fat2 *= a; // Multiplicando por a
         mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t()); // Calculando resto da divisão por p
 
         fatores.push_back(fat2);
 
-        // c ^ l mod p
+        // c ^ u mod p
         exp_mod(fat1, c, u, p);
-        it = std::find(fatores.begin(), fatores.end(), fat2);
+        it = std::find(fatores.begin(), fatores.end(), fat1);
 
         if (it != fatores.end()) {
+            
             l = it - fatores.begin();
-            ans = l * r - u;
+            //std::cout << "\nO valor de l é " << l << "\n";
+            //std::cout << "\nO valor de u é " << u << "\n";
+            ans = u * r - l;
             return ans;
         }
     }
@@ -306,7 +313,8 @@ int main() {
     std::cout << std::endl;
 
     //Logaritmo discreto
-    discrete_log = brute_force(prime, generator, a);
+    //discrete_log = brute_force(prime, generator, a);
+    discrete_log = BSGS(prime, generator, a);
 
     std::cout << "O logaritmo discreto de " << a << " módulo " << prime << " na base " << generator << " é: ";
     mpz_out_str(stdout, 10, discrete_log.get_mpz_t());
