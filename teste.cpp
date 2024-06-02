@@ -158,7 +158,6 @@ mpz_class brute_force(mpz_class p, mpz_class g, mpz_class a){
         }
         
         pot *= g;
-        i++;
 
         if(pot > p){
 
@@ -211,7 +210,7 @@ mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
 // ========== Main =============
 int main() {
 
-    mpz_class N, a, candidate, prime, generator;
+    mpz_class N, a, candidate, prime, generator, discrete_log;
     int MR_count = 0;
     std::string input_N, input_a;
 
@@ -249,6 +248,13 @@ int main() {
 
     std::cout << "Gerador g de " << prime << " é: ";
     mpz_out_str(stdout, 10, generator.get_mpz_t());
+    std::cout << std::endl;
+
+    //Logaritmo discreto
+    discrete_log = brute_force(prime, generator, a);
+
+    std::cout << "O logaritmo discreto de " << a << " módulo " << prime << " na base " << generator << " é: ";
+    mpz_out_str(stdout, 10, discrete_log.get_mpz_t());
     std::cout << std::endl;
 
     return 0;
