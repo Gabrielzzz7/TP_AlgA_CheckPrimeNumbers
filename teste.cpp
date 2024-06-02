@@ -139,24 +139,16 @@ std::vector<std::vector<mpz_class>> factorize(mpz_class n) {
     return factorization;
 }
 
-mpz_class randInt(mpz_class min, mpz_class max) {
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<mpz_class> dis(min.get_ui(), max.get_ui());
-    return mpz_class(dis(gen));
-}
-
 std::pair<mpz_class, mpz_class> findEstimativeGenerator(mpz_class prime, std::vector<std::vector<mpz_class>> factors) {
     mpz_class n, b, ord;
     n = prime - 1;
     b = 1;
     ord = 1;
 
-
+    return {0,0};
 }
 
 mpz_class find_primitive_root(mpz_class primo, std::vector<std::vector<mpz_class>> factors) {
-    std::vector<std::vector<mpz_class>> factors;
     mpz_class n, result, exp, q;
 
     n = primo - 1;
@@ -292,22 +284,22 @@ int main() {
 
     factors = factorize(prime - 1);
 
-    if (PartialFactorization) {
-        mpz_class minOrder;
-        std::pair<mpz_class, mpz_class> estimative = findEstimativeGenerator(prime, factors);
-        generator = estimative.first;
-        minOrder = estimative.second;
-        std::cout << "Estimativa do gerador: ";
-        mpz_out_str(stdout, 10, generator.get_mpz_t());
-        std::cout << "\nOrdem mínima estimada: ";
-        mpz_out_str(stdout, 10, minOrder.get_mpz_t());
-        std::cout << std::endl;
+    // if (PartialFactorization) {
+    //     mpz_class minOrder;
+    //     std::pair<mpz_class, mpz_class> estimative = findEstimativeGenerator(prime, factors);
+    //     generator = estimative.first;
+    //     minOrder = estimative.second;
+    //     std::cout << "Estimativa do gerador: ";
+    //     mpz_out_str(stdout, 10, generator.get_mpz_t());
+    //     std::cout << "\nOrdem mínima estimada: ";
+    //     mpz_out_str(stdout, 10, minOrder.get_mpz_t());
+    //     std::cout << std::endl;
 
-    }
-    else {
+    // }
+    // else {
         // Raiz primitiva
         generator = find_primitive_root(prime, factors);
-    }
+    // }
 
     std::cout << "Gerador g de " << prime << " é: ";
     mpz_out_str(stdout, 10, generator.get_mpz_t());
