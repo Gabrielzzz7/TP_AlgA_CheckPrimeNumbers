@@ -2,8 +2,12 @@
 #include <algorithm>
 #include <gmpxx.h>
 #include <vector>
+#include <random>
+#include <ctime>
 
 // ============= Implementação Miller-Rabin e achando menor primo maior que N ==============
+
+bool PartialFactorization = false;
 
 // Teste Miller-Rabin
 
@@ -85,38 +89,74 @@ bool isPrimeMRtest(mpz_class n, int& MR_count) {
 
 // =========== Implementação - achando raíz primitiva de N ============
 
-std::vector<mpz_class> factorize(mpz_class n) {
-    
-    std::vector<mpz_class> factorization;
+std::vector<std::vector<mpz_class>> factorize(mpz_class n) {
+    std::vector<std::vector<mpz_class>> factorization;
 
-    for (mpz_class d = 2; d * d <= n; d++) {
+    mpz_class d;
+    for (d = 2; d * d <= n && d < 1e7; d++) {
         while (n % d == 0) {
-            factorization.push_back(d);
+            bool found = false;
+            for (auto& factor_group : factorization) {
+                if (factor_group[0] == d) {
+                    factor_group.push_back(d);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                factorization.push_back({ d });
+            }
             n /= d;
         }
     }
-    if (n > 1)
-        factorization.push_back(n);
+    if (d >= 1e7) {
+        PartialFactorization = true;
+    }
+    if (n > 1) {
+        bool found = false;
+        for (auto& factor_group : factorization) {
+            if (factor_group[0] == n) {
+                factor_group.push_back(n);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            factorization.push_back({ n });
+        }
+    }
     return factorization;
 }
 
-mpz_class find_primitive_root(mpz_class primo) {
+mpz_class randInt(mpz_class min, mpz_class max) {
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<mpz_class> dis(min.get_ui(), max.get_ui());
+    return mpz_class(dis(gen));
+}
 
-    std::vector<mpz_class> factors;
+std::pair<mpz_class, mpz_class> findEstimativeGenerator(mpz_class prime, std::vector<std::vector<mpz_class>> factors) {
+    mpz_class n, b, ord;
+    n = prime - 1;
+    b = 1;
+    ord = 1;
+
+
+}
+
+mpz_class find_primitive_root(mpz_class primo, std::vector<std::vector<mpz_class>> factors) {
+    std::vector<std::vector<mpz_class>> factors;
     mpz_class n, result, exp, q;
 
     n = primo - 1;
-
-    // Fatorando primo-1
-    factors = factorize(n);
 
     for (mpz_class gerador = 1; gerador < primo; gerador++) {
 
         bool is_primitive = true;
 
-        for (size_t i = 0; i < factors.size(); i++) {
+        for (const auto& factor_group : factors) {
 
-            q = factors[i];
+            q = factor_group[0];
             exp = n / q;
             mpz_powm(result.get_mpz_t(), gerador.get_mpz_t(), exp.get_mpz_t(), primo.get_mpz_t());
 
@@ -135,16 +175,15 @@ mpz_class find_primitive_root(mpz_class primo) {
     return -1;
 }
 
-
 // ========== BSGS =============
 
-mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a){
+mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a) {
 
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
     mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
     mpz_class u, l; // Expoentes dos fatores
-    mpz_class ans; 
+    mpz_class ans;
 
     std::vector<mpz_class> fatores;
     std::vector<mpz_class>::iterator it;
@@ -153,22 +192,22 @@ mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a){
     r = r + 1; // Definindo o teto
     mpz_powm(c.get_mpz_t(), g.get_mpz_t(), r.get_mpz_t(), p.get_mpz_t());
 
-    for(u = 0; u < r; u++){
+    for (u = 0; u < r; u++) {
 
         // a * g ^ u mod p
-        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), (unsigned long) u.get_mpz_t());
+        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), (unsigned long)u.get_mpz_t());
         fat2 *= a;
         mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t());
-        
+
         fatores.push_back(fat2);
 
         // c ^ l mod p
         mpz_powm(fat1.get_mpz_t(), c.get_mpz_t(), u.get_mpz_t(), p.get_mpz_t());
         it = std::find(fatores.begin(), fatores.end(), fat2);
 
-        if(it != fatores.end()){
+        if (it != fatores.end()) {
 
-            l = (mpz_class) (it - fatores.begin());
+            l = (mpz_class)(it - fatores.begin());
             ans = l * r - u;
             return ans;
         }
@@ -192,7 +231,7 @@ int main() {
 
     std::cout << "Insira o valor para a: ";
     std::getline(std::cin, input_a);
-    
+
     // Convert inputs to mpz_class
     N = input_N;
     a = input_a;
@@ -216,8 +255,26 @@ int main() {
     gmp_printf("Proximo primo: %Zd\n", prime.get_mpz_t());
     printf("Numero de testes de Miller-Rabin: %d\n", MR_count);
 
-    // Raiz primitiva
-    generator = find_primitive_root(prime);
+    std::vector<std::vector<mpz_class>> factors;
+
+    factors = factorize(prime - 1);
+
+    if (PartialFactorization) {
+        mpz_class minOrder;
+        std::pair<mpz_class, mpz_class> estimative = findEstimativeGenerator(prime, factors);
+        generator = estimative.first;
+        minOrder = estimative.second;
+        std::cout << "Estimativa do gerador: ";
+        mpz_out_str(stdout, 10, generator.get_mpz_t());
+        std::cout << "\nOrdem mínima estimada: ";
+        mpz_out_str(stdout, 10, minOrder.get_mpz_t());
+        std::cout << std::endl;
+
+    }
+    else {
+        // Raiz primitiva
+        generator = find_primitive_root(prime, factors);
+    }
 
     std::cout << "Gerador g de " << prime << " e: ";
     mpz_out_str(stdout, 10, generator.get_mpz_t());
