@@ -157,9 +157,9 @@ mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
 
     for (u = 0; u < r; u++) {
         // a * g ^ u mod p
-        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), u.get_ui());
-        fat2 *= a;
-        mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t());
+        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), u.get_ui()); // g ^ u
+        fat2 *= a; // Multiplicando por a
+        mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t()); // Calculando resto da divisão por p
 
         fatores.push_back(fat2);
 
@@ -179,10 +179,9 @@ mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
 
 // ========== Main =============
 int main() {
+
     mpz_class N, a, candidate, prime, generator;
     int MR_count = 0;
-
-    // Leitura
     std::string input_N, input_a;
 
     std::cout << "Digite um numero grande N: ";
@@ -191,7 +190,7 @@ int main() {
     std::cout << "Insira o valor para a: ";
     std::getline(std::cin, input_a);
 
-    // Convert inputs to mpz_class
+    // Converter inputs para mpz_class
     N = input_N;
     a = input_a;
 
