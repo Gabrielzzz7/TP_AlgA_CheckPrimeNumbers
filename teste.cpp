@@ -25,7 +25,7 @@ void exp_mod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const 
         exp_copy /= 2;
     }
 
-    
+
 }
 
 // Teste Miller-Rabin
@@ -142,12 +142,26 @@ std::vector<std::vector<mpz_class>> factorize(mpz_class n) {
 }
 
 std::pair<mpz_class, mpz_class> findEstimativeGenerator(mpz_class prime, std::vector<std::vector<mpz_class>> factors) {
-    mpz_class n, b, ord;
+    mpz_class n, result, exp, q, b, ord;
     n = prime - 1;
     b = 1;
     ord = 1;
+    for (const auto& factor_group : factors) {
+        for (int i = 2; i < n; i++) {
+            q = factor_group[0];
+            exp = n / q;
+            exp_mod(result, i, exp, n);
+            if (result != 1) {
+                b *= result;
+                ord *= q;
+                break;
+            }
+        }
+    }
 
-    return {0,0};
+    b %= prime;
+    ord %= prime;
+    return { b, ord };
 }
 
 mpz_class find_primitive_root(mpz_class primo, std::vector<std::vector<mpz_class>> factors) {
@@ -181,36 +195,35 @@ mpz_class find_primitive_root(mpz_class primo, std::vector<std::vector<mpz_class
 
 // ========== FORÇA BRUTA =============
 
-mpz_class brute_force(mpz_class p, mpz_class g, mpz_class a){
-
+mpz_class brute_force(mpz_class p, mpz_class g, mpz_class a) {
     mpz_class i;
     mpz_class pot, modulo;
 
     pot = 1; // g ^ 0
 
-    for (i = 0; i < p; i++){
-        
+    for (i = 0; i < p; i++) {
+
         mpz_mod(modulo.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t());
-        
-        if(modulo == a){
+
+        if (modulo == a) {
             return i;
         }
-        
+
         pot *= g;
 
-        if(pot > p){
+        if (pot > p) {
 
-            mpz_mod(pot.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t()); 
-        }        
+            mpz_mod(pot.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t());
+        }
     }
-    
+
     return -1;
 }
 
 // ========== BSGS =============
 
 mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a) {
-    
+
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
     mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
@@ -239,7 +252,7 @@ mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a) {
         it = std::find(fatores.begin(), fatores.end(), fat1);
 
         if (it != fatores.end()) {
-            
+
             l = it - fatores.begin();
             //std::cout << "\nO valor de l é " << l << "\n";
             //std::cout << "\nO valor de u é " << u << "\n";
@@ -291,22 +304,21 @@ int main() {
 
     factors = factorize(prime - 1);
 
-    // if (PartialFactorization) {
-    //     mpz_class minOrder;
-    //     std::pair<mpz_class, mpz_class> estimative = findEstimativeGenerator(prime, factors);
-    //     generator = estimative.first;
-    //     minOrder = estimative.second;
-    //     std::cout << "Estimativa do gerador: ";
-    //     mpz_out_str(stdout, 10, generator.get_mpz_t());
-    //     std::cout << "\nOrdem mínima estimada: ";
-    //     mpz_out_str(stdout, 10, minOrder.get_mpz_t());
-    //     std::cout << std::endl;
+    if (PartialFactorization) {
+        mpz_class minOrder;
+        std::pair<mpz_class, mpz_class> estimative = findEstimativeGenerator(prime, factors);
+        generator = estimative.first;
+        minOrder = estimative.second;
+        std::cout << "Estimativa do gerador: ";
+        mpz_out_str(stdout, 10, generator.get_mpz_t());
+        std::cout << "\nOrdem mínima estimada: ";
+        mpz_out_str(stdout, 10, minOrder.get_mpz_t());
+        std::cout << std::endl;
 
-    // }
-    // else {
-        // Raiz primitiva
+    }
+    else {
         generator = find_primitive_root(prime, factors);
-    // }
+    }
 
     std::cout << "Gerador g de " << prime << " é: ";
     mpz_out_str(stdout, 10, generator.get_mpz_t());
