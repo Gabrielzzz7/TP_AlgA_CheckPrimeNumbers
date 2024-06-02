@@ -140,8 +140,39 @@ mpz_class find_primitive_root(const mpz_class& primo) {
     return -1;
 }
 
+// ========== FORÇA BRUTA =============
+
+mpz_class brute_force(mpz_class p, mpz_class g, mpz_class a){
+
+    mpz_class i;
+    mpz_class pot, modulo;
+
+    pot = 1; // g ^ 0
+
+    for (i = 0; i < p; i++){
+        
+        mpz_mod(modulo.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t());
+        
+        if(modulo == a){
+            return i;
+        }
+        
+        pot *= g;
+        i++;
+
+        if(pot > p){
+
+            mpz_mod(pot.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t()); 
+        }        
+    }
+    
+    return -1;
+}
+
 // ========== BSGS =============
+
 mpz_class BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
+    
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
     mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
