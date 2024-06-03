@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <gmpxx.h>
 #include <vector>
+#include <unordered_map>
+#include <chrono>
 #include <random>
 #include <ctime>
 
@@ -11,7 +13,7 @@ bool PartialFactorization = false;
 
 // Teste Miller-Rabin
 // a^exp mod p
-void exp_mod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const mpz_class& primo) {
+void expMod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const mpz_class& primo) {
     mpz_class base = a % primo;
     mpz_class exp_copy = exp;
     result = 1;
@@ -24,8 +26,6 @@ void exp_mod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const 
         base = (base * base) % primo;
         exp_copy /= 2;
     }
-
-
 }
 
 // Teste Miller-Rabin
@@ -45,7 +45,7 @@ bool millerRabinTest(const mpz_class& n, const mpz_class& a) {
     }
 
     // Calcula x = a^d % n
-    exp_mod(x, a, d, n);
+    expMod(x, a, d, n);
 
     // Se x == 1 ou x == n - 1, n é provavelmente primo
     if (x == 1 || x == n_minus_1) {
@@ -55,7 +55,7 @@ bool millerRabinTest(const mpz_class& n, const mpz_class& a) {
     // Realiza r - 1 iterações
     for (mpz_class i = 0; i < r - 1; i++) {
         // Calcula x = x^2 % n
-        exp_mod(x, x, 2, n);
+        expMod(x, x, 2, n);
 
         // Se x == n - 1, n é provavelmente primo
         if (x == n_minus_1) {
@@ -150,7 +150,7 @@ std::pair<mpz_class, mpz_class> findEstimativeGenerator(mpz_class prime, std::ve
         for (int i = 2; i < n; i++) {
             q = factor_group[0];
             exp = n / q;
-            exp_mod(result, i, exp, n);
+            expMod(result, i, exp, prime);
             if (result != 1) {
                 b *= result;
                 ord *= q;
@@ -176,7 +176,7 @@ mpz_class findPrimitiveRoot(mpz_class primo, std::vector<std::vector<mpz_class>>
 
             q = factor_group[0];
             exp = n / q;
-            exp_mod(result, gerador, exp, primo);
+            expMod(result, gerador, exp, primo);
 
             if (result == 1) {
                 is_primitive = false;
@@ -194,82 +194,114 @@ mpz_class findPrimitiveRoot(mpz_class primo, std::vector<std::vector<mpz_class>>
 }
 
 // ========== FORÇA BRUTA =============
+std::pair<mpz_class, double> bruteForce(mpz_class p, mpz_class g, mpz_class a) {
+    clock_t begin = clock();
+    const int limitTime = 120; 
 
-mpz_class bruteForce(mpz_class p, mpz_class g, mpz_class a) {
     mpz_class i;
     mpz_class pot, modulo;
 
     pot = 1; // g ^ 0
 
     for (i = 0; i < p; i++) {
-
+        if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+        }
         mpz_mod(modulo.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t());
 
         if (modulo == a) {
-            return i;
+            clock_t end_time = clock(); 
+            double elapsed_time = double(end_time - begin) / CLOCKS_PER_SEC; // Tempo decorrido em segundos
+
+            if (elapsed_time > limitTime) {
+                return {-1, elapsed_time}; 
+            }
+
+            return {i, elapsed_time}; 
         }
 
         pot *= g;
 
         if (pot > p) {
-
             mpz_mod(pot.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t());
         }
     }
 
-    return -1;
+    clock_t end_time = clock(); // Tempo de término
+    double elapsed_time = double(end_time - begin) / CLOCKS_PER_SEC; 
+
+    if (elapsed_time > limitTime) {
+        return {-1, elapsed_time}; 
+    }
+
+    return {-1, elapsed_time}; 
 }
 
 // ========== BSGS =============
-
-mpz_class BSGS(mpz_class p, mpz_class g, mpz_class a) {
-
+std::pair<mpz_class, double> BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
+    // Obtendo o tempo de início do processamento 
+    clock_t begin = clock();
+    const int limitTime = 120; 
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
-    mpz_class fat1, fat2; // Fatores que iremos comparar nas iterações
-    mpz_class u, l; // Expoentes dos fatores
+    mpz_class fat1, fat2; // factors que iremos comparar nas iterações
+    mpz_class u, l; // Expoentes dos factors
     mpz_class ans;
 
-    std::vector<mpz_class> fatores;
+    std::vector<mpz_class> factors;
     std::vector<mpz_class>::iterator it;
 
-    mpz_sqrt(r.get_mpz_t(), p.get_mpz_t()); // Calculando raiz de p
+    // Calculando a raiz de p
+    mpz_sqrt(r.get_mpz_t(), p.get_mpz_t());
     r = r + 1; // Definindo o teto
-    //std::cout << "\nO teto da raiz de P é " << r << "\n";
-    exp_mod(c, g, r, p);
-    //std::cout << "\ng ^ r mod p é igual a " << c << "\n";
 
+    // Calculando g^r % p
+    expMod(c, g, r, p);
+
+    // Pré-cálculo de todos os valores de g^u * a % p para 0 <= u < r
     for (u = 0; u < r; u++) {
-        // a * g ^ l mod p
-        mpz_pow_ui(fat2.get_mpz_t(), g.get_mpz_t(), u.get_ui()); // g ^ u
-        fat2 *= a; // Multiplicando por a
-        mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t()); // Calculando resto da divisão por p
+        // Calculando a * g^u % p
+        expMod(fat2, g, u, p);
+        fat2 *= a;
+        mpz_mod(fat2.get_mpz_t(), fat2.get_mpz_t(), p.get_mpz_t());
 
-        fatores.push_back(fat2);
+        // Verificando se o tempo de processamento excedeu o limite
+        if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+        }
 
-        // c ^ u mod p
-        exp_mod(fat1, c, u, p);
-        it = std::find(fatores.begin(), fatores.end(), fat1);
+        factors.push_back(fat2);
+    }
 
-        if (it != fatores.end()) {
+    expMod(fat1, c, r, p);
 
-            l = it - fatores.begin();
-            //std::cout << "\nO valor de l é " << l << "\n";
-            //std::cout << "\nO valor de u é " << u << "\n";
+    // Buscando por colisão entre c^u % p e os valores de a * g^u % p pré-calculados
+    for (u = 0; u < r; u++) {
+        if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+        }
+
+        expMod(fat1, c, u, p);
+        it = std::find(factors.begin(), factors.end(), fat1);
+        
+        if (it != factors.end()) {
+            l = it - factors.begin();
             ans = u * r - l;
-            return ans;
+            if (ans < p)
+                return std::make_pair(ans, (double)(clock() - begin) / CLOCKS_PER_SEC); 
         }
     }
 
-    return -1;
+    return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
 }
 
 // ========== Main =============
 int main() {
-
     mpz_class N, a, candidate, prime, generator, discrete_log;
     int MR_count = 0;
+    double time;
     std::string input_N, input_a;
+
 
     std::cout << "Digite um numero grande N: ";
     std::getline(std::cin, input_N);
@@ -326,11 +358,19 @@ int main() {
 
     //Logaritmo discreto
     //discrete_log = brute_force(prime, generator, a);
-    discrete_log = BSGS(prime, generator, a);
+    std::pair<mpz_class, double> result_pair = bruteForce(prime, generator, a);
+    discrete_log = result_pair.first;
+    time = result_pair.second;
 
-    std::cout << "O logaritmo discreto de " << a << " módulo " << prime << " na base " << generator << " é: ";
-    mpz_out_str(stdout, 10, discrete_log.get_mpz_t());
-    std::cout << std::endl;
+    if (discrete_log == -1) {
+        std::cout << "O tempo de execução execedeu 2 minutos" << std::endl;
+    }
+    else {
+        std::cout << "O logaritmo discreto de " << a << " módulo " << prime << " na base " << generator << " é: ";
+        mpz_out_str(stdout, 10, discrete_log.get_mpz_t());
+        std::cout << std::endl;
+        std::cout << "O tempo de execução foi: " << time << std::endl;
+    }
 
     return 0;
 }
