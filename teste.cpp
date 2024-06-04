@@ -295,6 +295,55 @@ std::pair<mpz_class, double> BSGS(const mpz_class& p, const mpz_class& g, const 
     return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
 }
 
+// ========== TEOREMA RESTO CHINES =========
+
+// Função para calcular o inverso modular
+mpz_class modInverse(const mpz_class &a, const mpz_class &m) {
+    mpz_class inv;
+    if (mpz_invert(inv.get_mpz_t(), a.get_mpz_t(), m.get_mpz_t()) == 0) {
+        throw std::runtime_error("Inverse does not exist for given values");
+    }
+    return inv;
+}
+
+// Função que verifica se dois números são coprimos
+bool areCoprime(const mpz_class &a, const mpz_class &b) {
+    mpz_class gcd;
+    mpz_gcd(gcd.get_mpz_t(), a.get_mpz_t(), b.get_mpz_t());
+    return gcd == 1;
+}
+
+// Função que implementa o Teorema do Resto Chinês
+mpz_class resto_chines(const std::vector<mpz_class> &n, const std::vector<mpz_class> &a) {
+    // Verifica se os módulos são coprimos
+    for (size_t i = 0; i < n.size(); ++i) {
+        for (size_t j = i + 1; j < n.size(); ++j) {
+            if (!areCoprime(n[i], n[j])) {
+                throw std::runtime_error("Modules are not coprime");
+            }
+        }
+    }
+
+    // Calcula o produto de todos os módulos
+    mpz_class prod = 1;
+    for (const auto &ni : n) {
+        prod *= ni;
+    }
+
+    // Aplica o Teorema do Resto Chinês
+    mpz_class result = 0;
+    for (size_t i = 0; i < n.size(); ++i) {
+        mpz_class ni = n[i];
+        mpz_class ai = a[i];
+        mpz_class p = prod / ni;
+        mpz_class inv = modInverse(p, ni);
+        result += ai * inv * p;
+    }
+
+    result %= prod;
+    return result;
+}
+
 // ========== Main =============
 int main() {
     mpz_class N, a, candidate, prime, generator, discrete_log;
