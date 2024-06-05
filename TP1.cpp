@@ -358,15 +358,14 @@ std::pair<mpz_class, double> pollingHellman(const mpz_class& a, const mpz_class&
         mpz_class ei = qFactors.size();
 
         mpz_class gi;
-        expMod(gi, g, n / pi, n);
+        expMod(gi, g, n / pi, p); // Corrigido para usar 'p' ao invés de 'n'
 
-        // Passo 2: Calcular h_i
         mpz_class hi;
-        expMod(hi, p, n / pi, n);
+        expMod(hi, gi, (n / pi), p); // Corrigido para usar 'gi' ao invés de 'p'
 
-        // Passo 3: Resolver a congruência g_i^x_i ≡ h_i (mod p_i^e_i)
         mpz_class xi;
-        expMod(xi, hi, (pi - 1) * (ei - 1), n);
+        expMod(xi, hi, (p - 1) / (pi - 1), p); // Corrigido para usar 'hi' ao invés de 'p'
+
 
         xValues.push_back(xi);
     }
