@@ -28,6 +28,12 @@ void expMod(mpz_class& result, const mpz_class& a, const mpz_class& exp, const m
     }
 }
 
+mpz_class mod_exp(mpz_class base, mpz_class exp, mpz_class mod) {
+    mpz_class result;
+    expMod(result, base, exp, mod);
+    return result;
+}
+
 // Teste Miller-Rabin
 bool millerRabinTest(const mpz_class& n, const mpz_class& a) {
     mpz_class x, n_minus_1, d, r;
@@ -300,9 +306,7 @@ std::pair<mpz_class, double> BSGS(const mpz_class& p, const mpz_class& g, const 
 // Função para calcular o inverso modular
 mpz_class modInverse(const mpz_class &a, const mpz_class &m) {
     mpz_class inv;
-    if (mpz_invert(inv.get_mpz_t(), a.get_mpz_t(), m.get_mpz_t()) == 0) {
-        throw std::runtime_error("Inverse does not exist for given values");
-    }
+    mpz_invert(inv.get_mpz_t(), a.get_mpz_t(), m.get_mpz_t());
     return inv;
 }
 
@@ -344,13 +348,66 @@ mpz_class resto_chines(const std::vector<mpz_class> &n, const std::vector<mpz_cl
     return result;
 }
 
+// ========== POHLIG-HELLMAN ===========
+
+mpz_class pohlig_hellman(mpz_class g, mpz_class h, mpz_class p, mpz_class n, const std::chrono::seconds& time_limit, double &elapsed_time) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    auto factorization = factorize(n);
+    std::vector<mpz_class> residues;
+    std::vector<mpz_class> moduli;
+    
+    for (const auto& factor_group : factorization) {
+        mpz_class prime = factor_group[0];
+        int exponent = factor_group.size();
+        mpz_class pe = 1;
+        for (int i = 0; i < exponent; ++i) {
+            pe *= prime;
+        }
+        
+        mpz_class g_pe = mod_exp(g, n / pe, p);
+        mpz_class h_pe = mod_exp(h, n / pe, p);
+        
+        auto result = BSGS(p, g_pe, h_pe);
+        mpz_class log_pe = result.first;
+        elapsed_time = result.second;
+
+        if (log_pe == -1) {
+            std::cerr << "BSGS failed or timed out." << std::endl;
+            return -1;
+        }
+        residues.push_back(log_pe);
+        moduli.push_back(pe);
+
+        auto now = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = now - start;
+        if (elapsed > time_limit) {
+            std::cerr << "Pohlig-Hellman algorithm timed out." << std::endl;
+            return -1;
+        }
+    }
+    
+    mpz_class result = resto_chines(moduli, residues);
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> total_elapsed = end - start;
+    elapsed_time = total_elapsed.count();
+    return result;
+}
+
+mpz_class discreteLog(mpz_class a, mpz_class p, mpz_class g, const std::chrono::seconds& time_limit, double &elapsed_time) {
+    mpz_class n = p - 1;
+
+    return pohlig_hellman(g, a, p, n, time_limit, elapsed_time);
+}
+
 // ========== Main =============
 int main() {
     mpz_class N, a, candidate, prime, generator, discrete_log;
     int MR_count = 0;
     double time;
     std::string input_N, input_a;
-
+    std::chrono::seconds time_limit = std::chrono::minutes(1);
 
     std::cout << "Digite um numero grande N: ";
     std::getline(std::cin, input_N);
@@ -395,30 +452,25 @@ int main() {
         std::cout << "\nOrdem mínima estimada: ";
         mpz_out_str(stdout, 10, minOrder.get_mpz_t());
         std::cout << std::endl;
-
     }
     else {
         generator = findPrimitiveRoot(prime, factors);
+        std::cout << "Gerador g de " << prime << " é: ";
+        mpz_out_str(stdout, 10, generator.get_mpz_t());
+        std::cout << std::endl;
     }
 
-    std::cout << "Gerador g de " << prime << " é: ";
-    mpz_out_str(stdout, 10, generator.get_mpz_t());
-    std::cout << std::endl;
-
     //Logaritmo discreto
-    //discrete_log = brute_force(prime, generator, a);
-    std::pair<mpz_class, double> result_pair = bruteForce(prime, generator, a);
-    discrete_log = result_pair.first;
-    time = result_pair.second;
+    discrete_log = discreteLog(a, prime, generator, time_limit, time);
 
     if (discrete_log == -1) {
-        std::cout << "O tempo de execução execedeu 2 minutos" << std::endl;
+        std::cout << "O tempo de execução execedeu 1 minuto" << std::endl;
     }
     else {
         std::cout << "O logaritmo discreto de " << a << " módulo " << prime << " na base " << generator << " é: ";
         mpz_out_str(stdout, 10, discrete_log.get_mpz_t());
         std::cout << std::endl;
-        std::cout << "O tempo de execução foi: " << time << std::endl;
+        std::cout << "O tempo de execução foi: " << time << " segundos" << std::endl;
     }
 
     return 0;
