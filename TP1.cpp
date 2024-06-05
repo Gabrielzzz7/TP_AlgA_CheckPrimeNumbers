@@ -202,7 +202,7 @@ mpz_class findPrimitiveRoot(mpz_class primo, std::vector<std::vector<mpz_class>>
 // ========== FORÇA BRUTA =============
 std::pair<mpz_class, double> bruteForce(mpz_class p, mpz_class g, mpz_class a) {
     clock_t begin = clock();
-    const int limitTime = 120; 
+    const int limitTime = 120;
 
     mpz_class i;
     mpz_class pot, modulo;
@@ -211,19 +211,19 @@ std::pair<mpz_class, double> bruteForce(mpz_class p, mpz_class g, mpz_class a) {
 
     for (i = 0; i < p; i++) {
         if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
-            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC);
         }
         mpz_mod(modulo.get_mpz_t(), pot.get_mpz_t(), p.get_mpz_t());
 
         if (modulo == a) {
-            clock_t end_time = clock(); 
+            clock_t end_time = clock();
             double elapsed_time = double(end_time - begin) / CLOCKS_PER_SEC; // Tempo decorrido em segundos
 
             if (elapsed_time > limitTime) {
-                return {-1, elapsed_time}; 
+                return { -1, elapsed_time };
             }
 
-            return {i, elapsed_time}; 
+            return { i, elapsed_time };
         }
 
         pot *= g;
@@ -234,20 +234,20 @@ std::pair<mpz_class, double> bruteForce(mpz_class p, mpz_class g, mpz_class a) {
     }
 
     clock_t end_time = clock(); // Tempo de término
-    double elapsed_time = double(end_time - begin) / CLOCKS_PER_SEC; 
+    double elapsed_time = double(end_time - begin) / CLOCKS_PER_SEC;
 
     if (elapsed_time > limitTime) {
-        return {-1, elapsed_time}; 
+        return { -1, elapsed_time };
     }
 
-    return {-1, elapsed_time}; 
+    return { -1, elapsed_time };
 }
 
 // ========== BSGS =============
 std::pair<mpz_class, double> BSGS(const mpz_class& p, const mpz_class& g, const mpz_class& a) {
     // Obtendo o tempo de início do processamento 
     clock_t begin = clock();
-    const int limitTime = 120; 
+    const int limitTime = 120;
     mpz_class r; // Teto da raiz do número primo p
     mpz_class c; // Resto da divisão de g ^ r por p
     mpz_class fat1, fat2; // factors que iremos comparar nas iterações
@@ -273,7 +273,7 @@ std::pair<mpz_class, double> BSGS(const mpz_class& p, const mpz_class& g, const 
 
         // Verificando se o tempo de processamento excedeu o limite
         if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
-            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC);
         }
 
         factors.push_back(fat2);
@@ -284,60 +284,54 @@ std::pair<mpz_class, double> BSGS(const mpz_class& p, const mpz_class& g, const 
     // Buscando por colisão entre c^u % p e os valores de a * g^u % p pré-calculados
     for (u = 0; u < r; u++) {
         if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
-            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC);
         }
 
         expMod(fat1, c, u, p);
         it = std::find(factors.begin(), factors.end(), fat1);
-        
+
         if (it != factors.end()) {
             l = it - factors.begin();
             ans = u * r - l;
             if (ans < p)
-                return std::make_pair(ans, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+                return std::make_pair(ans, (double)(clock() - begin) / CLOCKS_PER_SEC);
         }
     }
 
-    return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC); 
+    return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC);
 }
 
 // ========== TEOREMA RESTO CHINES =========
 
 // Função para calcular o inverso modular
-mpz_class modInverse(const mpz_class &a, const mpz_class &m) {
+mpz_class modInverse(const mpz_class& a, const mpz_class& m) {
     mpz_class inv;
     mpz_invert(inv.get_mpz_t(), a.get_mpz_t(), m.get_mpz_t());
     return inv;
 }
 
 // Função que verifica se dois números são coprimos
-bool areCoprime(const mpz_class &a, const mpz_class &b) {
+bool areCoprime(const mpz_class& a, const mpz_class& b) {
     mpz_class gcd;
     mpz_gcd(gcd.get_mpz_t(), a.get_mpz_t(), b.get_mpz_t());
     return gcd == 1;
 }
 
 // Função que implementa o Teorema do Resto Chinês
-mpz_class resto_chines(const std::vector<mpz_class> &n, const std::vector<mpz_class> &a) {
-    // Verifica se os módulos são coprimos
-    for (size_t i = 0; i < n.size(); ++i) {
-        for (size_t j = i + 1; j < n.size(); ++j) {
-            if (!areCoprime(n[i], n[j])) {
-                throw std::runtime_error("Modules are not coprime");
-            }
-        }
-    }
 
+mpz_class chineseRest(const std::vector<std::vector<mpz_class>>& n, const std::vector<mpz_class>& a) {
     // Calcula o produto de todos os módulos
     mpz_class prod = 1;
-    for (const auto &ni : n) {
-        prod *= ni;
+    for (const auto& vec : n) {
+        mpz_class prime = vec[0];
+        mpz_pow_ui(prime.get_mpz_t(), prime.get_mpz_t(), vec.size());
+        prod *= prime;
     }
 
     // Aplica o Teorema do Resto Chinês
     mpz_class result = 0;
     for (size_t i = 0; i < n.size(); ++i) {
-        mpz_class ni = n[i];
+        mpz_class ni = n[i][0];
         mpz_class ai = a[i];
         mpz_class p = prod / ni;
         mpz_class inv = modInverse(p, ni);
@@ -350,55 +344,35 @@ mpz_class resto_chines(const std::vector<mpz_class> &n, const std::vector<mpz_cl
 
 // ========== POHLIG-HELLMAN ===========
 
-mpz_class pohlig_hellman(mpz_class g, mpz_class h, mpz_class p, mpz_class n, const std::chrono::seconds& time_limit, double &elapsed_time) {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    auto factorization = factorize(n);
-    std::vector<mpz_class> residues;
-    std::vector<mpz_class> moduli;
-    
-    for (const auto& factor_group : factorization) {
-        mpz_class prime = factor_group[0];
-        int exponent = factor_group.size();
-        mpz_class pe = 1;
-        for (int i = 0; i < exponent; ++i) {
-            pe *= prime;
-        }
-        
-        mpz_class g_pe = mod_exp(g, n / pe, p);
-        mpz_class h_pe = mod_exp(h, n / pe, p);
-        
-        auto result = BSGS(p, g_pe, h_pe);
-        mpz_class log_pe = result.first;
-        elapsed_time = result.second;
-
-        if (log_pe == -1) {
-            std::cerr << "BSGS failed or timed out." << std::endl;
-            return -1;
-        }
-        residues.push_back(log_pe);
-        moduli.push_back(pe);
-
-        auto now = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = now - start;
-        if (elapsed > time_limit) {
-            std::cerr << "Pohlig-Hellman algorithm timed out." << std::endl;
-            return -1;
-        }
-    }
-    
-    mpz_class result = resto_chines(moduli, residues);
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> total_elapsed = end - start;
-    elapsed_time = total_elapsed.count();
-    return result;
-}
-
-mpz_class discreteLog(mpz_class a, mpz_class p, mpz_class g, const std::chrono::seconds& time_limit, double &elapsed_time) {
+std::pair<mpz_class, double> pollingHellman(const mpz_class& a, const mpz_class& p, const mpz_class& g, std::vector<std::vector<mpz_class>> factors) {
+    clock_t begin = clock();
+    const int limitTime = 120;
+    std::vector<mpz_class> xValues;
     mpz_class n = p - 1;
 
-    return pohlig_hellman(g, a, p, n, time_limit, elapsed_time);
+    for (const auto& qFactors : factors) {
+        if ((clock() - begin) / CLOCKS_PER_SEC > limitTime) {
+            return std::make_pair(-1, (double)(clock() - begin) / CLOCKS_PER_SEC);
+        }
+        mpz_class pi = qFactors[0];
+        mpz_class ei = qFactors.size();
+
+        mpz_class gi;
+        expMod(gi, g, n / pi, n);
+
+        // Passo 2: Calcular h_i
+        mpz_class hi;
+        expMod(hi, p, n / pi, n);
+
+        // Passo 3: Resolver a congruência g_i^x_i ≡ h_i (mod p_i^e_i)
+        mpz_class xi;
+        expMod(xi, hi, (pi - 1) * (ei - 1), n);
+
+        xValues.push_back(xi);
+    }
+    mpz_class result = chineseRest(factors, xValues);
+
+    return std::make_pair(result, (double)(clock() - begin) / CLOCKS_PER_SEC);
 }
 
 // ========== Main =============
@@ -461,10 +435,12 @@ int main() {
     }
 
     //Logaritmo discreto
-    discrete_log = discreteLog(a, prime, generator, time_limit, time);
+    std::pair<mpz_class, double> result_pair = pollingHellman(a, prime, generator, factors);
+    discrete_log = result_pair.first;
+    time = result_pair.second;
 
     if (discrete_log == -1) {
-        std::cout << "O tempo de execução execedeu 1 minuto" << std::endl;
+        std::cout << "O tempo de execução execedeu 2 minutos" << std::endl;
     }
     else {
         std::cout << "O logaritmo discreto de " << a << " módulo " << prime << " na base " << generator << " é: ";
